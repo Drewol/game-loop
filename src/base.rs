@@ -42,23 +42,31 @@ impl<G, T: TimeTrait, W> GameLoop<G, T, W> {
     }
 
     pub fn next_frame<U, R>(&mut self, mut update: U, mut render: R) -> bool
-        where U: FnMut(&mut GameLoop<G, T, W>),
-              R: FnMut(&mut GameLoop<G, T, W>),
+    where
+        U: FnMut(&mut GameLoop<G, T, W>),
+        R: FnMut(&mut GameLoop<G, T, W>),
     {
+        puffin::profile_scope!("Frame");
+        puffin::GlobalProfiler::lock().new_frame();
         let g = self;
 
-        if g.exit_next_iteration { return false; }
+        if g.exit_next_iteration {
+            return false;
+        }
 
         g.current_instant = T::now();
 
         let mut elapsed = g.current_instant.sub(&g.previous_instant);
-        if elapsed > g.max_frame_time { elapsed = g.max_frame_time; }
+        if elapsed > g.max_frame_time {
+            elapsed = g.max_frame_time;
+        }
 
         g.last_frame_time = elapsed;
         g.running_time += elapsed;
         g.accumulated_time += elapsed;
 
         while g.accumulated_time >= g.fixed_time_step {
+            puffin::profile_scope!("Update");
             update(g);
 
             g.accumulated_time -= g.fixed_time_step;
@@ -70,6 +78,7 @@ impl<G, T: TimeTrait, W> GameLoop<G, T, W> {
         if g.window_occluded && T::supports_sleep() {
             T::sleep(g.fixed_time_step);
         } else {
+            puffin::profile_scope!("Render");
             render(g);
             g.number_of_renders += 1;
         }

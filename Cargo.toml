@@ -22,6 +22,7 @@ features = ["Performance", "Window"]
 [dependencies]
 winit = { version = "0.29", optional = true }
 tao = { version = "0.21", optional = true }
+puffin = "0.19"
 
 [[example]]
 name = "using_winit"
